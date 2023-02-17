@@ -1,0 +1,30 @@
+---
+- name: Create www directory # создание директории расположения сайта /var/www/mydomain.com
+  ansible.builtin.file:
+    path: /var/www/{{ domain }} # путь создаваемой директории
+    state: directory # что директория
+    mode: 0775 # права доступа
+
+- name: Set SELinux context # добавление контекста SELinux для /var/www
+  community.general.sefcontext:
+    target: '/var/www/(/.*)?' # шаблон контекста
+    setype: httpd_sys_content_t # тип контекста
+    state: present # обеспечить присутствие контекста
+
+- name: Clone lighthouse # клонирование репозитория lighthouse
+  ansible.builtin.git:
+    repo: 'https://github.com/VKCOM/lighthouse.git' # репозиторий
+    dest: /var/www/{{ domain }} # путь для клонирования
+    version: master # ветка
+    update: false # не обновлять
+
+- name: Set the permissions to all www files and directories # установка владельца и разрешений 755 на директории и 644 на файлы размещения /var/www
+  ansible.builtin.file:
+    path: /var/www # путь для установки разрешений
+    recurse: true # рекурсивно
+    owner: '{{ nginx_user }}' # пользователь nginx
+    group: '{{ nginx_user }}' # группа nginx
+    mode: u=rwX,g=rX,o=rX # права доступа
+
+- name: Apply SELinux file context to www # восстановление SELinux разрешений для /var/www
+  ansible.builtin.command: restorecon -irv /var/www # команда восстановления

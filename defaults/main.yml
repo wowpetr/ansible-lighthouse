@@ -1,0 +1,3 @@
+---
+domain: "mydomain.org"
+nginx_user: nginx
